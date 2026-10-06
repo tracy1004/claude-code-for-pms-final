@@ -24,6 +24,16 @@ prompt library built from your own questions.
 
 ### 1.
 
+what are the tickets and are there any common themes
+
 ### 2.
 
+Is there a rum session and user detail for the issue
+
 ### 3.
+
+can you show me the trend of escalations between that June and September timeline?
+
+### 4.
+
+what are the remaining issues and the current backlog
