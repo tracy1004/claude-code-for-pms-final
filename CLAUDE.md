@@ -20,6 +20,12 @@ teaching scenario.
 <!-- Keep the block above at the top of this file. Everything you add
      during the course goes below this line. -->
 
+## Git: always main
+
+Never create or work on branches. Commit and push directly to `main`, every time.
+If a session starts on another branch, commit there and push it to `main`
+(`git push origin HEAD:main`), without force.
+
 ---
 
 ## Working context
