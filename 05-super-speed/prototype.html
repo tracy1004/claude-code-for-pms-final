@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rook Dispatch: Option B prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --ink:#1c2430; --mute:#5d6b7c; --line:#d9dfe7; --bg:#f3f5f8; --card:#fff;
+          --blue:#2457c5; --green:#1d7a46; --amber:#a15c00; --red:#b3261e; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui,Segoe UI,Arial,sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:#1c2430; color:#fff; padding:10px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  header b { font-size:16px; }
+  header .tag { font-size:12px; background:#3a4658; padding:2px 8px; border-radius:10px; }
+  nav { display:flex; gap:4px; margin-left:auto; }
+  nav button { background:transparent; color:#cfd6e1; border:1px solid #4a566a; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:14px; }
+  nav button.on { background:#fff; color:#1c2430; border-color:#fff; }
+  .note { background:#fff8e1; border-bottom:1px solid #ecd9a0; padding:6px 20px; font-size:13px; color:#5c4a00; }
+  main { padding:18px 20px 60px; max-width:1150px; margin:0 auto; }
+  .hidden { display:none !important; }
+
+  /* alert banner (H3) */
+  #alert { border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; gap:12px; border:1px solid; }
+  #alert.live { background:#e8f0ff; border-color:#9db8ee; }
+  #alert.missed { background:#fdecea; border-color:#f0b4af; }
+  #alert.ok { background:#e7f5ec; border-color:#a9d6b9; }
+  #alert .big { font-size:17px; font-weight:600; }
+  #alert .sp { flex:1; }
+  .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; font-size:13px; color:var(--mute); }
+  .controls button, .btn { border:1px solid var(--line); background:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:var(--ink); }
+  .controls button:hover, .btn:hover { border-color:var(--blue); }
+  .btn.primary { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:860px){ .grid{ grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .card h2 { margin:0; font-size:19px; }
+  .sub { color:var(--mute); font-size:13px; }
+  .row1 { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .badge { font-size:15px; font-weight:700; padding:4px 12px; border-radius:6px; background:#e7f5ec; color:var(--green); }
+  .badge.pinged { background:#e8f0ff; color:var(--blue); }
+
+  .quiet { border-radius:8px; padding:10px 12px; margin:10px 0; font-size:14px; border:1px solid; }
+  .quiet.low { background:#fff4e0; border-color:#f0cf93; }
+  .quiet.busy { background:#eef2f7; border-color:var(--line); }
+  .quiet b { display:block; margin-bottom:2px; }
+  .quiet small { color:var(--mute); display:block; margin-top:4px; }
+
+  .spark { display:flex; align-items:flex-end; gap:5px; height:54px; margin:6px 0 2px; }
+  .spark div { flex:1; background:#b9c6dc; border-radius:3px 3px 0 0; position:relative; }
+  .spark div.now { background:var(--blue); }
+  .spark div span { position:absolute; top:-15px; left:0; right:0; text-align:center; font-size:10px; color:var(--mute); }
+  .sparklbl { display:flex; justify-content:space-between; font-size:11px; color:var(--mute); }
+
+  .tl-head { display:flex; justify-content:space-between; align-items:center; margin:12px 0 6px; }
+  .seg button { border:1px solid var(--line); background:#fff; padding:3px 10px; font-size:12px; cursor:pointer; }
+  .seg button:first-child { border-radius:6px 0 0 6px; } .seg button:last-child { border-radius:0 6px 6px 0; border-left:0; }
+  .seg button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th { text-align:left; font-weight:600; color:var(--mute); font-size:12px; padding:4px 6px; border-bottom:1px solid var(--line); }
+  td { padding:7px 6px; border-bottom:1px solid #eef1f5; }
+  tr.ping { cursor:pointer; } tr.ping:hover td { background:#f6f8fb; }
+  tr.new td { animation:flash 1.6s; }
+  @keyframes flash { from{background:#fff3b0;} to{background:transparent;} }
+  .pill { font-size:12px; padding:2px 8px; border-radius:10px; font-weight:600; }
+  .taken { background:#e7f5ec; color:var(--green); }
+  .down { background:#eef2f7; color:#44546a; }
+  .missed { background:#fdecea; color:var(--red); }
+  .reported { color:var(--amber); font-size:12px; }
+  .detail td { background:#f9fafc; padding:10px 14px; }
+  .detail dl { margin:0 0 8px; display:grid; grid-template-columns:150px 1fr; gap:3px 10px; font-size:13px; }
+  .detail dt { color:var(--mute); }
+  .na { color:var(--mute); font-style:italic; }
+
+  .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+  @media (max-width:860px){ .tiles{ grid-template-columns:1fr 1fr; } }
+  .tile { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .tile .n { font-size:26px; font-weight:700; } .tile .l { font-size:12px; color:var(--mute); }
+  .flag { background:#fdecea; color:var(--red); font-weight:600; font-size:12px; padding:2px 8px; border-radius:10px; }
+  .okf { background:#e7f5ec; color:var(--green); font-weight:600; font-size:12px; padding:2px 8px; border-radius:10px; }
+  .health { font-size:13px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:10px; background:#fafbfd; }
+  .health.warn { background:#fff4e0; border-color:#f0cf93; }
+  .trail { font-size:13px; margin:2px 0 8px; }
+  .trail span { display:inline-block; background:#eef2f7; border-radius:4px; padding:1px 6px; margin:0 2px 2px 0; }
+  .trail span.bad { background:#fdecea; color:var(--red); }
+  select { font:inherit; font-size:13px; padding:3px 6px; border:1px solid var(--line); border-radius:6px; }
+  .legend { margin-top:18px; font-size:13px; color:var(--mute); background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+  .legend b { color:var(--ink); }
+
+  /* phone */
+  .phonewrap { display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start; justify-content:center; }
+  .phone { width:340px; background:#0f1520; border-radius:34px; padding:14px; box-shadow:0 8px 30px #0003; }
+  .screen { background:#fff; border-radius:24px; min-height:600px; padding:18px 16px; display:flex; flex-direction:column; gap:12px; position:relative; }
+  .screen .top { display:flex; justify-content:space-between; font-size:12px; color:var(--mute); }
+  .screen h3 { margin:0; font-size:18px; }
+  .status { background:#eef2f7; border-radius:10px; padding:10px 12px; font-size:14px; }
+  .pingcard { border:2px solid var(--blue); border-radius:14px; padding:14px; background:#f3f7ff; }
+  .pingcard .t { font-size:34px; font-weight:700; text-align:center; margin:4px 0; font-variant-numeric:tabular-nums; }
+  .bar { height:8px; background:#dfe6f3; border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .bar i { display:block; height:100%; background:var(--blue); width:100%; transition:width .25s linear; }
+  .bar i.low { background:var(--red); }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .bigbtn { padding:15px 8px; font-size:17px; border-radius:12px; border:0; cursor:pointer; font-weight:700; }
+  .take { background:var(--green); color:#fff; } .decline { background:#e6e9ee; color:var(--ink); }
+  .undo { background:#fff8e1; border:1px solid #ecd9a0; border-radius:12px; padding:12px; font-size:14px; }
+  .undo .btn { margin-top:8px; }
+  .side { max-width:360px; font-size:14px; }
+  .side h3 { margin:0 0 6px; }
+  .side ol { padding-left:20px; margin:6px 0; }
+  .side li { margin-bottom:6px; }
+
+  #toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#1c2430; color:#fff; padding:10px 16px; border-radius:8px; font-size:14px; opacity:0; pointer-events:none; transition:opacity .25s; max-width:90vw; }
+  #toast.on { opacity:1; }
+  .modalbg { position:fixed; inset:0; background:#0006; display:flex; align-items:center; justify-content:center; z-index:5; }
+  .modal { background:#fff; border-radius:10px; padding:18px; width:420px; max-width:92vw; }
+  .modal h3 { margin:0 0 8px; }
+  .modal textarea { width:100%; height:70px; border:1px solid var(--line); border-radius:6px; padding:8px; font:inherit; }
+  .modal .attached { background:#f3f5f8; border-radius:6px; padding:8px 10px; font-size:13px; margin:8px 0; }
+  .modal .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <b>Rook Dispatch</b>
+  <span class="tag">Prototype · Option B with phone monitoring (RUM)</span>
+  <nav>
+    <button id="tab-console" class="on">Handler console (Kip)</button>
+    <button id="tab-ops">Tech Ops monitoring</button>
+    <button id="tab-phone">Responder phone (Meteor Mite)</button>
+  </nav>
+</header>
+<div class="note">Mock-up for discussion. Every number, time and ticket id below is made-up sample data in the shape of the September figures. Nothing here reads from Rook systems. Cover identities only.</div>
+
+<main>
+
+<!-- ============ HANDLER CONSOLE ============ -->
+<section id="console">
+  <div id="alert" class="ok">
+    <div><div class="big" id="alertTitle">No live pings right now</div><div class="sub" id="alertSub">You'll see a banner here, with a sound that is different for each responder, whenever a ping goes out or is missed.</div></div>
+    <div class="sp"></div>
+  </div>
+
+  <div class="controls">
+    <span>Try it:</span>
+    <button id="simPing">▶ Send a ping to Meteor Mite</button>
+    <button id="simMiss" disabled>Let it go unanswered (missed)</button>
+    <label><input type="checkbox" id="sound" checked> Alert sounds on</label>
+    <span>· Click any ping row for detail. Use "Report a problem" to file a ticket with the ping attached.</span>
+  </div>
+
+  <div class="grid" id="cards"></div>
+
+  <div class="legend">
+    <b>What this screen is showing (from the brief):</b>
+    <b>H1</b> ping timeline on each responder's card ·
+    <b>H2</b> "quiet this week" indicator comparing a responder with their own last 8 weeks ·
+    <b>H3</b> live alert when a ping goes out or is missed, with a distinct sound per responder ·
+    <b>H4</b> one-tap "Report a problem with this ping" that creates a ticket with the ping data attached ·
+    <b>M2</b> per-ping phone trail (reached the phone, shown, opened, tapped) ·
+    <b>M3</b> plain-language phone-health line ·
+    <b>M5</b> the report button now raises an incident with the trail and device facts attached.
+    <br><br>
+    <b>Deliberately not here:</b> a mirror or recording of the responder's phone screen, any location trail, any control over routing, any link between a cover identity and a real person.
+  </div>
+</section>
+
+<!-- ============ TECH OPS ============ -->
+<section id="ops" class="hidden">
+  <div class="tiles" id="tiles"></div>
+  <div class="card">
+    <div class="tl-head"><b>Phone health by app version and network (last 7 days, all responders)</b>
+      <label class="sub">Network: <select id="netFilter"><option value="all">All</option><option value="wifi">Wi-Fi</option><option value="mobile">Mobile</option></select></label></div>
+    <table><thead><tr><th>Segment</th><th>Responders</th><th>Reached phone</th><th>Median sent→shown</th><th>90th pct sent→opened</th><th>Errors</th><th></th></tr></thead><tbody id="segRows"></tbody></table>
+    <p class="sub">M6: thresholds below are placeholders. The brief proposes setting real ones after two weeks of baseline data.</p>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="tl-head"><b>Incidents</b><span class="sub">Raised from the handler console or from this screen</span></div>
+    <table><thead><tr><th>Id</th><th>Raised by</th><th>Category</th><th>About</th><th>Owner</th><th></th></tr></thead><tbody id="incRows"></tbody></table>
+  </div>
+  <div class="legend"><b>M4 to M6.</b> Tech Ops sees delivery and timing across all responders and can raise or take over incidents. Everything shown is by cover identity and device facts only: no location, no screen content, no real-world identity. All figures on this tab are invented sample data.</div>
+</section>
+
+<!-- ============ RESPONDER PHONE ============ -->
+<section id="phone" class="hidden">
+  <div class="phonewrap">
+    <div class="phone"><div class="screen" id="screen"></div></div>
+    <div class="side">
+      <h3>Meteor Mite's phone</h3>
+      <p class="sub">Shows P1, P2 and P4 from the brief. What you do here shows up on Kip's console.</p>
+      <ol>
+        <li>Press <b>Send a ping</b>. The 60-second wait starts.</li>
+        <li>Press <b>Decline</b>. A 10-second <b>Undo</b> appears (P1).</li>
+        <li>Or do nothing until it reaches 0. The ping stays reachable for a moment (P2) if nobody else has taken it.</li>
+        <li>Then switch to <b>Handler console</b> to see it in the timeline.</li>
+      </ol>
+      <p class="sub">Also shows P5: the "What we measure" screen, listing exactly what the app reports.</p>
+      <button class="btn primary" id="phoneSend">▶ Send a ping to this phone</button>
+      <p class="sub" style="margin-top:12px">Wait is 60s here because that's the shipped 4.2 value. Whether it goes back to 90s is a decision for Helen and Wen Li (see the brief).</p>
+    </div>
+  </div>
+</section>
+
+</main>
+<div id="toast"></div>
+
+<script>
+(function(){
+  /* ---------- sample data (made up, shaped like the Sept figures) ---------- */
+  var DAY = 86400000;
+  var NOW = Date.now();
+  function at(daysAgo, hh, mm){ var d=new Date(NOW - daysAgo*DAY); d.setHours(hh,mm,0,0); return d.getTime(); }
+  var nextId = 100;
+
+  var R = {
+    mite: { key:'mite', name:'Meteor Mite', area:'Eastgate', freq:520, quiet:true,
+            weekly:[11,12,10,11,12,4,3,2], avg:11, status:'Available',
+            pings:[
+              {t:at(2,14,12), outcome:'missed', secs:60},
+              {t:at(5,9,40),  outcome:'taken',  secs:18},
+              {t:at(6,22,5),  outcome:'missed', secs:60},
+              {t:at(12,17,30),outcome:'missed', secs:60},
+              {t:at(19,11,2), outcome:'turned down', secs:9},
+              {t:at(24,3,48), outcome:'missed', secs:60}
+            ]},
+    gale: { key:'gale', name:'The Gale', area:'Eastgate', freq:880, quiet:false,
+            weekly:[13,13,12,14,13,17,19,20], avg:13, status:'Available',
+            pings:[
+              {t:at(0,20,15), outcome:'taken', secs:22},
+              {t:at(1,13,2),  outcome:'taken', secs:31},
+              {t:at(1,19,44), outcome:'missed',secs:60},
+              {t:at(2,8,21),  outcome:'taken', secs:14},
+              {t:at(3,16,9),  outcome:'taken', secs:41},
+              {t:at(4,22,30), outcome:'taken', secs:27},
+              {t:at(5,12,12), outcome:'turned down', secs:7},
+              {t:at(6,10,55), outcome:'taken', secs:19},
+              {t:at(9,15,40), outcome:'taken', secs:25},
+              {t:at(15,18,20),outcome:'missed',secs:60}
+            ]}
+  };
+  R.mite.pings.forEach(function(p){p.id=nextId++;});
+  R.gale.pings.forEach(function(p){p.id=nextId++;});
+
+  /* phone trail per ping (M2): seconds after "sent" at which each event happened; null = never */
+  var miteTrails=[ {rc:1,sh:2,op:null}, {rc:1,sh:1,op:12}, {rc:19,sh:20,op:null}, {rc:2,sh:2,op:null}, {rc:1,sh:1,op:5}, {rc:null,sh:null,op:null} ];
+  R.mite.pings.forEach(function(p,i){ p.trail=miteTrails[i]; });
+  R.gale.pings.forEach(function(p){ p.trail={rc:1,sh:1,op:Math.max(2,p.secs-6)}; });
+  R.mite.device={ app:'4.2.0 (one version behind)', os:'Android 13', model:'Model M-12', net:'Mobile', notif:'On', saver:'On',
+                  health:'Battery saver is on. This can delay alerts, and the app is one version behind. Your responder can fix both in phone settings.', warn:true };
+  R.gale.device={ app:'4.2.1 (current)', os:'iOS 17', model:'Model P-15', net:'Wi-Fi', notif:'On', saver:'Off',
+                  health:'Phone looks healthy: current app, notifications on, no errors this week.', warn:false };
+
+  var incidents=[
+    {id:'INC-21', by:'Handler: Linda Pruitt', cat:'Ping never arrived', about:'Farlight, 3 pings', owner:'Support'},
+    {id:'INC-22', by:'Tech Ops', cat:'Arrived late', about:'App 4.1.9 on mobile', owner:'Tech Ops'}
+  ];
+  var segs=[
+    {seg:'App 4.2.1 · Wi-Fi',   net:'wifi',   n:7, rc:99, sh:1.1, op:24, err:0},
+    {seg:'App 4.2.1 · Mobile',  net:'mobile', n:6, rc:96, sh:1.8, op:31, err:1},
+    {seg:'App 4.2.0 · Mobile',  net:'mobile', n:2, rc:84, sh:9.4, op:58, err:3, flag:true},
+    {seg:'App 4.1.9 · Mobile',  net:'mobile', n:1, rc:78, sh:14.2,op:61, err:2, flag:true},
+    {seg:'App 4.2.0 · Wi-Fi',   net:'wifi',   n:2, rc:97, sh:1.4, op:29, err:0}
+  ];
+  var range = { mite:7, gale:7 };   // days shown
+  var open = {};                    // expanded ping ids
+  var live = null;                  // {key, id, started}
+
+  /* ---------- helpers ---------- */
+  function $(id){ return document.getElementById(id); }
+  function fmt(t){
+    var d=new Date(t), days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var diff = Math.floor((NOW - t)/DAY);
+    var rel = diff<=0 ? 'today' : diff===1 ? 'yesterday' : diff+' days ago';
+    return days[d.getDay()]+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+' · '+rel;
+  }
+  function toast(msg){ var t=$('toast'); t.textContent=msg; t.className='on'; clearTimeout(toast.h); toast.h=setTimeout(function(){t.className='';},3200); }
+  function beep(freq){
+    if(!$('sound').checked) return;
+    try{
+      var C=window.AudioContext||window.webkitAudioContext; if(!C) return;
+      var ctx=beep.ctx||(beep.ctx=new C()); var o=ctx.createOscillator(), g=ctx.createGain();
+      o.frequency.value=freq; o.type='sine'; g.gain.value=0.12; o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime+0.35);
+    }catch(e){}
+  }
+  function inRange(r,p){ return (NOW - p.t) <= range[r.key]*DAY + 3600000; }
+  function sortedPings(r){ return r.pings.slice().sort(function(a,b){return b.t-a.t;}); }
+
+  /* ---------- H2 text ---------- */
+  function quietBox(r){
+    var week = r.pings.filter(function(p){return (NOW-p.t) <= 7*DAY+3600000;});
+    var n = week.length, missed = week.filter(function(p){return p.outcome==='missed';}).length;
+    var latest = sortedPings(r)[0];
+    var ago = latest ? Math.max(0, Math.floor((NOW-latest.t)/DAY)) : null;
+    var agoTxt = ago===null ? 'no pings on record' : ago===0 ? 'last ping today' : 'last ping '+ago+' day'+(ago>1?'s':'')+' ago';
+    if(r.quiet){
+      return '<div class="quiet low"><b>Quiet this week</b>'+
+        n+' pings in the last 7 days, against about '+r.avg+' a week over the previous 8 weeks. '+missed+' of the '+n+' were missed; '+agoTxt+'.'+
+        '<small>This tells you what happened, not why. We have not yet established the cause. Support is replying to your open tickets about this.</small></div>';
+    }
+    return '<div class="quiet busy"><b>Busier than usual</b>'+
+      n+' pings in the last 7 days, against about '+r.avg+' a week over the previous 8 weeks. '+missed+' missed; '+agoTxt+'.</div>';
+  }
+
+  /* ---------- render console ---------- */
+  function sparkHtml(r){
+    var max=Math.max.apply(null,r.weekly);
+    var h=r.weekly.map(function(v,i){
+      var ht=Math.round(v/max*46)+4;
+      return '<div class="'+(i===r.weekly.length-1?'now':'')+'" style="height:'+ht+'px"><span>'+v+'</span></div>';
+    }).join('');
+    return '<div class="spark">'+h+'</div><div class="sparklbl"><span>8 weeks ago</span><span>This week</span></div>';
+  }
+  function trailHtml(p){
+    var t=p.trail||{}, out='<div class="trail"><span>Sent 0s</span>';
+    out += t.rc==null ? '<span class="bad">Never reached the phone</span>' :
+           '<span'+(t.rc>10?' class="bad"':'')+'>Reached phone +'+t.rc+'s'+(t.rc>10?' (late)':'')+'</span>';
+    if(t.rc!=null) out += t.sh==null ? '<span class="bad">Not shown</span>' : '<span>Shown +'+t.sh+'s</span>';
+    if(t.rc!=null) out += t.op==null ? '<span class="bad">Never opened</span>' : '<span>Opened +'+t.op+'s</span>';
+    if(t.op!=null) out += '<span>'+(p.outcome==='taken'?'Took it':p.outcome==='turned down'?'Declined':'Answered')+' +'+p.secs+'s</span>';
+    return out+'</div>';
+  }
+  function rowHtml(r,p){
+    var cls = p.outcome==='taken'?'taken':p.outcome==='missed'?'missed':'down';
+    var tr = '<tr class="ping'+(p.fresh?' new':'')+'" data-r="'+r.key+'" data-id="'+p.id+'">'+
+      '<td>'+fmt(p.t)+'</td><td><span class="pill '+cls+'">'+p.outcome+'</span></td>'+
+      '<td>'+p.secs+'s</td><td>'+(p.reported?'<span class="reported">Incident '+p.reported+'</span>':'')+'</td></tr>';
+    if(open[p.id]){
+      tr += '<tr class="detail"><td colspan="4"><dl>'+
+        '<dt>Offered</dt><dd>'+fmt(p.t)+'</dd>'+
+        '<dt>Outcome</dt><dd>'+p.outcome+(p.outcome==='missed'?' (wait of 60s ran out; it moved on to the next responder)':'')+(p.undone?' · decline was undone':'')+'</dd>'+
+        '<dt>Time to outcome</dt><dd>'+p.secs+' seconds</dd>'+
+        '<dt>Phone trail</dt><dd>'+trailHtml(p)+'</dd>'+
+        '</dl>'+
+        (p.reported ? '<span class="reported">You raised this as '+p.reported+'.</span>' :
+          '<button class="btn report" data-r="'+r.key+'" data-id="'+p.id+'">Report an incident with this ping</button>')+
+        '</td></tr>';
+    }
+    return tr;
+  }
+  function cardHtml(r){
+    var rows = sortedPings(r).filter(function(p){return inRange(r,p);}).map(function(p){return rowHtml(r,p);}).join('');
+    if(!rows) rows='<tr><td colspan="4" class="na">No pings in this period.</td></tr>';
+    var pinged = live && live.key===r.key;
+    return '<div class="card">'+
+      '<div class="row1"><h2>'+r.name+'</h2><span class="badge'+(pinged?' pinged':'')+'">'+(pinged?'Pinged now':r.status)+'</span></div>'+
+      '<div class="sub">Area: '+r.area+' · Handler: Kip</div>'+
+      quietBox(r)+
+      '<div class="health'+(r.device.warn?' warn':'')+'"><b>Phone health:</b> '+r.device.health+
+        '<br><span class="sub">App '+r.device.app+' · '+r.device.os+' · '+r.device.model+' · Network: '+r.device.net+' · Notifications: '+r.device.notif+' · Battery saver: '+r.device.saver+'</span></div>'+
+      '<div class="sub"><b>Pings per week, last 8 weeks</b></div>'+sparkHtml(r)+
+      '<div class="tl-head"><b>Ping timeline</b>'+
+        '<span class="seg"><button data-range="7" data-r="'+r.key+'" class="'+(range[r.key]===7?'on':'')+'">7 days</button><button data-range="30" data-r="'+r.key+'" class="'+(range[r.key]===30?'on':'')+'">30 days</button></span></div>'+
+      '<table><thead><tr><th>Offered</th><th>Outcome</th><th>Time</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '</div>';
+  }
+  function renderConsole(){
+    $('cards').innerHTML = cardHtml(R.mite)+cardHtml(R.gale);
+    R.mite.pings.forEach(function(p){p.fresh=false;}); R.gale.pings.forEach(function(p){p.fresh=false;});
+  }
+
+  /* ---------- H3 banner ---------- */
+  function setAlert(kind,title,sub){
+    var a=$('alert'); a.className=kind; $('alertTitle').textContent=title; $('alertSub').textContent=sub;
+  }
+
+  /* ---------- shared ping lifecycle ---------- */
+  var timer=null, WAIT=60;
+  function startPing(){
+    if(live) { toast('A ping is already live.'); return; }
+    live={key:'mite', id:null, started:Date.now(), state:'offered'};
+    setAlert('live','Ping sent to Meteor Mite','Waiting for an answer. 60 seconds, then it moves on to the next responder.');
+    beep(R.mite.freq);
+    $('simPing').disabled=true; $('simMiss').disabled=false;
+    clearInterval(timer); timer=setInterval(tick,250);
+    renderConsole(); renderPhone();
+  }
+  function remaining(){ return Math.max(0, WAIT - (Date.now()-live.started)/1000); }
+  function tick(){
+    if(!live || live.state!=='offered'){ return; }
+    if(remaining()<=0){ finish('missed'); return; }
+    var t=$('count'), b=$('barfill');
+    if(t) t.textContent=Math.ceil(remaining())+'s';
+    if(b){ b.style.width=(remaining()/WAIT*100)+'%'; b.className=remaining()<12?'low':''; }
+  }
+  function record(outcome,secs){
+    var p={id:nextId++, t:Date.now(), outcome:outcome, secs:Math.round(secs), fresh:true,
+           trail:{rc:1, sh:1, op: outcome==='missed' ? null : Math.max(2,Math.round(secs)-3)}};
+    R.mite.pings.push(p); range.mite=Math.max(range.mite,7);
+    R.mite.weekly[R.mite.weekly.length-1] = R.mite.pings.filter(function(x){return (NOW-x.t)<=7*DAY+3600000 || x.t>NOW;}).length;
+    return p;
+  }
+  function finish(outcome){
+    var secs = outcome==='missed' ? 60 : (Date.now()-live.started)/1000;
+    var p = record(outcome, secs);
+    live.id=p.id; live.state=outcome;
+    if(outcome==='missed'){
+      setAlert('missed','Ping to Meteor Mite was missed','No answer in 60 seconds, so it moved on. Recorded as missed. Open the card to see it in the timeline.');
+      beep(R.mite.freq*0.6);
+    } else if(outcome==='taken'){
+      setAlert('ok','Meteor Mite took the callout','Taken after '+Math.round(secs)+' seconds.');
+    } else {
+      setAlert('ok','Meteor Mite turned the ping down','Declined after '+Math.round(secs)+' seconds. The responder can still undo for 10 seconds.');
+    }
+    $('simPing').disabled=false; $('simMiss').disabled=true;
+    renderConsole(); renderPhone();
+  }
+
+  /* ---------- phone ---------- */
+  var undoTimer=null, undoLeft=0, claimOpen=true, showMeasure=false;
+  function renderPhone(){
+    var s=$('screen'), h='';
+    if(showMeasure){
+      s.innerHTML='<div class="top"><span>Rook Responder</span><span>Meteor Mite</span></div><h3>What we measure</h3>'+
+        '<div class="status"><b>For each callout ping:</b><br>when it reached your phone, when it was shown, when you opened it, and when you tapped Take or Decline.</div>'+
+        '<div class="status"><b>About your phone:</b><br>app version, system version, phone model, network type (Wi-Fi or mobile), whether notifications and battery saver are on, and app errors.</div>'+
+        '<div class="status"><b>We do not collect:</b><br>your location trail, what is on your screen, your contacts, or anything that says who you are outside Rook. Your handler, Support and Tech Ops can see the items above, under your cover name only.</div>'+
+        '<button class="btn" id="pMeasureBack">Back</button>';
+      return;
+    }
+    var quietMsg='<div class="status"><b>You haven'+"'"+'t been offered a callout for '+Math.max(0,Math.floor((NOW-sortedPings(R.mite)[0].t)/DAY))+' days.</b><br>Your handler can see this.</div>';
+    h+='<div class="top"><span>Rook Responder</span><span>Meteor Mite</span></div><h3>Available</h3>';
+    if(!live){
+      h+=quietMsg+'<p class="sub">When a callout comes in, you'+"'"+'ll get a ping here. If you decline by mistake you can undo it for 10 seconds.</p>';
+    } else if(live.state==='offered'){
+      h+='<div class="pingcard"><b>Callout, Eastgate</b><div class="sub">Structural entry · about 9 min away</div>'+
+         '<div class="t" id="count">'+Math.ceil(remaining())+'s</div><div class="bar"><i id="barfill" style="width:'+(remaining()/WAIT*100)+'%"></i></div>'+
+         '<div class="two"><button class="bigbtn take" id="pTake">Take it</button><button class="bigbtn decline" id="pDecline">Decline</button></div></div>';
+    } else if(live.state==='turned down' && undoLeft>0){
+      h+='<div class="undo"><b>You declined this callout.</b><br>Tapped by mistake? You have <b id="undoN">'+undoLeft+'</b> seconds to undo it.<br><button class="btn primary" id="pUndo">Undo, I want this one</button></div>';
+    } else if(live.state==='turned down'){
+      h+='<div class="status">Declined. The callout has moved to the next responder.</div>'+quietMsg;
+    } else if(live.state==='missed' && claimOpen){
+      h+='<div class="undo"><b>This ping timed out.</b><br>Nobody has taken the callout yet, so you can still claim it.<br><button class="btn primary" id="pClaim">Take it now</button></div>';
+    } else if(live.state==='missed'){
+      h+='<div class="status">This callout has been taken by someone else.</div>'+quietMsg;
+    } else if(live.state==='taken'){
+      h+='<div class="status"><b>Callout taken.</b> Head to Eastgate. Your handler has been told.</div>';
+    }
+    h+='<div style="margin-top:auto"><button class="btn" id="pMeasure">What we measure</button></div>';
+    s.innerHTML=h;
+    var b;
+    if((b=$('pTake'))) b.onclick=function(){ finish('taken'); };
+    if((b=$('pDecline'))) b.onclick=function(){
+      finish('turned down'); undoLeft=10; renderPhone();
+      clearInterval(undoTimer);
+      undoTimer=setInterval(function(){ undoLeft--; if(undoLeft<=0){ clearInterval(undoTimer); undoLeft=0; renderPhone(); } else { var n=$('undoN'); if(n) n.textContent=undoLeft; } },1000);
+    };
+    if((b=$('pUndo'))) b.onclick=function(){
+      clearInterval(undoTimer); undoLeft=0;
+      var p=R.mite.pings.filter(function(x){return x.id===live.id;})[0]; if(p){ p.outcome='taken'; p.undone=true; }
+      live.state='taken';
+      setAlert('ok','Meteor Mite undid the decline and took the callout','Reversed within the 10-second window. The timeline shows it as taken, with a note.');
+      renderConsole(); renderPhone(); toast('Decline undone.');
+    };
+    if((b=$('pClaim'))) b.onclick=function(){
+      var p=R.mite.pings.filter(function(x){return x.id===live.id;})[0]; if(p){ p.outcome='taken'; p.secs=p.secs+5; p.undone=false; }
+      live.state='taken'; claimOpen=false;
+      setAlert('ok','Meteor Mite claimed the callout after the ping timed out','It was still open. The timeline shows it as taken.');
+      renderConsole(); renderPhone(); toast('Claimed.');
+    };
+  }
+
+  /* ---------- incident reporting (H4 / M5), from a ping or from Tech Ops ---------- */
+  var CATS=['Ping never arrived','Arrived late','Shown but too late to answer','Wrong tap','App error','Other'];
+  function openIncident(cfg){
+    // cfg: {title, role, about, attached, defaultCat, onSent(inc)}
+    var bg=document.createElement('div'); bg.className='modalbg';
+    bg.innerHTML='<div class="modal"><h3>'+cfg.title+'</h3>'+
+      '<div class="attached"><b>Attached automatically:</b><br>'+cfg.attached+'</div>'+
+      '<label class="sub">Category<br><select id="incCat" style="width:100%">'+CATS.map(function(c){return '<option'+(c===cfg.defaultCat?' selected':'')+'>'+c+'</option>';}).join('')+'</select></label>'+
+      '<textarea id="repText" style="margin-top:8px" placeholder="What did the responder say happened? (optional)"></textarea>'+
+      '<div class="acts"><button class="btn" id="repCancel">Cancel</button><button class="btn primary" id="repSend">Raise incident</button></div></div>';
+    document.body.appendChild(bg);
+    $('repCancel').onclick=function(){ document.body.removeChild(bg); };
+    $('repSend').onclick=function(){
+      var inc={id:'INC-'+(23+incidents.length-2), by:cfg.role, cat:$('incCat').value, about:cfg.about, owner: cfg.role==='Tech Ops' ? 'Tech Ops' : 'Support'};
+      incidents.push(inc); document.body.removeChild(bg);
+      if(cfg.onSent) cfg.onSent(inc);
+      renderOps();
+      toast(inc.id+' raised with the phone trail attached. Owner: '+inc.owner+'. Tech Ops can see it.');
+    };
+  }
+  function reportPing(rk,id){
+    var r=R[rk], p=r.pings.filter(function(x){return x.id===id;})[0];
+    var tr=p.trail||{}, d=r.device;
+    openIncident({
+      title:'Raise an incident for this ping', role:'Handler: Kip', about:r.name+', 1 ping',
+      defaultCat: p.outcome==='missed' ? (tr.rc==null ? 'Ping never arrived' : tr.op==null ? 'Shown but too late to answer' : 'Arrived late') : 'Wrong tap',
+      attached: r.name+' · '+fmt(p.t)+' · outcome: '+p.outcome+' · '+p.secs+'s<br>Phone trail: reached '+(tr.rc==null?'never':'+'+tr.rc+'s')+', shown '+(tr.sh==null?'never':'+'+tr.sh+'s')+', opened '+(tr.op==null?'never':'+'+tr.op+'s')+
+                '<br>Device: app '+d.app+', '+d.os+', '+d.model+', '+d.net+', notifications '+d.notif+', battery saver '+d.saver,
+      onSent:function(inc){ p.reported=inc.id; renderConsole(); }
+    });
+  }
+
+  /* ---------- Tech Ops (M4, M6) ---------- */
+  function renderOps(){
+    var net=$('netFilter').value;
+    var rows=segs.filter(function(s){return net==='all'||s.net===net;});
+    var n=0, rc=0, sh=0;
+    rows.forEach(function(s){ n+=s.n; rc+=s.rc*s.n; sh+=s.sh*s.n; });
+    var allN=segs.reduce(function(a,s){return a+s.n;},0);
+    $('tiles').innerHTML=
+      '<div class="tile"><div class="n">'+(n?Math.round(rc/n):'-')+'%</div><div class="l">pings that reached the phone</div></div>'+
+      '<div class="tile"><div class="n">'+(n?(sh/n).toFixed(1):'-')+'s</div><div class="l">median sent to shown</div></div>'+
+      '<div class="tile"><div class="n">'+rows.reduce(function(a,s){return a+s.err;},0)+'</div><div class="l">app errors this week</div></div>'+
+      '<div class="tile"><div class="n">3 of 16</div><div class="l">responders with notifications off or battery saver on</div></div>';
+    $('segRows').innerHTML=rows.map(function(s,i){
+      return '<tr><td>'+s.seg+'</td><td>'+s.n+'</td><td>'+s.rc+'% '+(s.flag?'<span class="flag">below threshold</span>':'<span class="okf">ok</span>')+'</td><td>'+s.sh+'s</td><td>'+s.op+'s</td><td>'+s.err+'</td>'+
+        '<td><button class="btn raiseSeg" data-i="'+segs.indexOf(s)+'">Raise incident</button></td></tr>';
+    }).join('') || '<tr><td colspan="7" class="na">No segments.</td></tr>';
+    $('incRows').innerHTML=incidents.map(function(c){
+      return '<tr><td>'+c.id+'</td><td>'+c.by+'</td><td>'+c.cat+'</td><td>'+c.about+'</td><td>'+c.owner+'</td>'+
+        '<td>'+(c.owner==='Support'?'<button class="btn takeOver" data-id="'+c.id+'">Take over (Tech Ops)</button>':'')+'</td></tr>';
+    }).join('');
+  }
+
+  /* ---------- wiring ---------- */
+  document.addEventListener('click',function(e){
+    var t=e.target;
+    var rb=t.closest('.report'); if(rb){ reportPing(rb.getAttribute('data-r'), +rb.getAttribute('data-id')); return; }
+    var rs=t.closest('.raiseSeg'); if(rs){ var s=segs[+rs.getAttribute('data-i')];
+      openIncident({title:'Raise an incident for '+s.seg, role:'Tech Ops', about:s.seg+', '+s.n+' responders', defaultCat:'Arrived late',
+        attached:s.seg+' · '+s.n+' responders · reached phone '+s.rc+'% · median sent to shown '+s.sh+'s · 90th pct to opened '+s.op+'s · '+s.err+' errors'}); return; }
+    var to=t.closest('.takeOver'); if(to){ incidents.forEach(function(c){ if(c.id===to.getAttribute('data-id')) c.owner='Tech Ops'; }); renderOps(); toast('Incident is now owned by Tech Ops.'); return; }
+    var sg=t.closest('[data-range]'); if(sg){ range[sg.getAttribute('data-r')]=+sg.getAttribute('data-range'); renderConsole(); return; }
+    var row=t.closest('tr.ping'); if(row){ var id=+row.getAttribute('data-id'); open[id]=!open[id]; renderConsole(); return; }
+    if(t.id==='pMeasure'){ showMeasure=true; renderPhone(); return; }
+    if(t.id==='pMeasureBack'){ showMeasure=false; renderPhone(); return; }
+  });
+  $('netFilter').onchange=renderOps;
+  $('simPing').onclick=startPing;
+  $('phoneSend').onclick=function(){ if(live && live.state==='offered'){ toast('A ping is already live on this phone.'); return; }
+    live=null; clearInterval(undoTimer); undoLeft=0; claimOpen=true; showMeasure=false; startPing(); };
+  $('simMiss').onclick=function(){ if(live && live.state==='offered'){ finish('missed'); } };
+  var tabs={console:$('tab-console'), ops:$('tab-ops'), phone:$('tab-phone')};
+  function show(k){
+    Object.keys(tabs).forEach(function(n){ tabs[n].className = n===k?'on':''; $(n).classList.toggle('hidden', n!==k); });
+    if(k==='console') renderConsole(); if(k==='ops') renderOps(); if(k==='phone') renderPhone();
+  }
+  Object.keys(tabs).forEach(function(k){ tabs[k].onclick=function(){ show(k); }; });
+
+  renderConsole(); renderPhone(); renderOps();
+})();
+</script>
+</body>
+</html>
