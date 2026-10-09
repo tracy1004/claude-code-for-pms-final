@@ -95,6 +95,8 @@ Tickets are all topics since 12 Aug (107 in total, 83 open), not only ping probl
 | S4 | **Stuck.** A few bad pings dropped my rank and there is no way back. | Quiet four | `history.py`: no decay |
 | S5 | **Handler can't tell.** My handler sees an empty card, or hears of a lost callout after the fact, and can't explain or act. | All handlers | Kip, Aunt Dot, Ambrose |
 | S6 | **Handler can't see what I was shown.** There's no way to check whether my phone received, showed or timed out a ping. | All handlers, plus Support | Same; no delivery data exists |
+| S7 | **Planned time away looks like a problem.** I'm taking five days off. There's no way to tell my handler, so my silence reads as "quiet", and if pings still go out they count as missed and cost me rank. | Any responder, and their handler | Not in the data; follows from "recent acceptance" counting every miss (`history.py`). I have not verified how availability is set today. |
+| S8 | **Stuck unavailable.** I'm back, or I forgot to switch my status, and I can't put myself back to available, so I get nothing and don't know why. | Any responder | Plausible contributor to "my phone never goes off". Not tested: we don't know how many of the 30 tickets had this cause. |
 
 ## 3. Options
 
@@ -146,16 +148,25 @@ Tickets are all topics since 12 Aug (107 in total, 83 open), not only ping probl
 - **H4. One-tap "Report a problem with this ping"** creates a ticket with the ping and its phone trail (M2) attached, instead of free text.
 
 *Real user monitoring of handheld devices* (new; closes S6)
-- **M1. Collection from the responder app.** For each ping, the app reports timestamps for: push received on the device, notification shown, app opened, screen rendered, and the responder's tap (take or decline). Per device it reports app version, OS version, device model, network type (wifi, mobile, none), notification permission on or off, battery-saver on or off, and crashes or errors. Nothing else.
+- **M1. Collection from the responder app.** For each ping, the app reports timestamps for: push received on the device, notification shown, app opened, screen rendered, and the responder's tap (take or decline). Per device it reports app version, OS version, device model, network type (wifi, mobile, none), notification permission on or off, battery-saver on or off, and crashes or errors. It also records each status change (Available, Off shift, Away) with its time. Nothing else.
 - **M2. Per-ping phone trail, visible to the handler** on the timeline: "Sent 22:41:03 · Reached phone 22:41:04 · Shown 22:41:04 · Opened 22:41:19 · Declined 22:41:21". It replaces the earlier H5 and answers "what was my responder shown, and when?" in terms of events, not screens.
 - **M3. Phone-health line on the responder card** in plain words, for example "Notifications are switched off on this phone" or "App is two versions behind". The handler can pass it to their responder. It's a fact about the phone, not a score about the person.
 - **M4. Tech Ops monitoring view,** across all responders, filterable by app version, OS, device model and network. It shows: pings that reached the phone (delivery rate); median and 90th-percentile time from sent to shown and from shown to opened; crash and error counts; and which responders have notifications off. It uses neutral cover-identity names only.
 - **M5. Incident reporting from either role.** A handler or a Tech Ops user can raise an incident from a ping, a responder card or a Tech Ops chart. The incident carries a category (ping never arrived, arrived late, shown but too late to answer, wrong tap, app error, other), the affected pings and their phone trails (M2), the device facts (M1), and who raised it. Handler-raised incidents land in Support; Tech Ops can see all of them and take over the technical ones.
 - **M6. Threshold alerts to Tech Ops,** for example when the delivery rate for an app version or network type falls below an agreed level, or time-to-shown goes above an agreed level. The thresholds are set after two weeks of baseline data; they are not guessed now.
 
-**What changes for the responder.** S1: the quiet spell has an end, and the app says so. S2: a miss is not punished, the ping stays reachable for a moment, and an unseen ping is repeated. S3: undo exists. S4: ranking recovers by design. New: they can see exactly what their phone reports about itself (P5).
+*Responder-controlled availability* (new; S7 and S8)
+- **V1. "Plan time away," set by the responder on the phone.** The responder picks a number of days (for example 5, up to a maximum to be agreed) starting now or on a chosen date. No reason is asked for. The handler is told immediately: a console alert (H3 style) and a visible "Away until Wed 14 Oct" badge on the card.
+  - While away: no pings are sent, so nothing is recorded as missed or turned down. The recent-acceptance score is **held** (neither penalised nor decayed by R2). The "quiet this week" indicator (H2) switches off and says "Away, not quiet". Support and Tech Ops see the state so tickets and incidents are not raised for a planned absence.
+  - On the return date the responder gets a reminder the day before and is set back to Available by their own confirmation (see open question 8 on auto-return). On return the score is restored to where it was before they left.
+  - The responder can end it early, with V2.
+- **V2. "Set me available," one tap by the responder.** Works from Away, Off shift or any state where they are not receiving pings. The change reaches the Responder Availability Record and the handler's card straight away, with a console alert ("Meteor Mite is available"). It also covers S8: a responder who finds they have been unavailable can fix it themselves.
+- **V3. Status history for the handler.** The card lists the last status changes, who made them (the responder) and when, so a handler can explain a quiet period ("set Away on Mon, back Fri") without asking Support.
+- **Record and Supply.** The new states are written to the Responder Availability Record with a reason code (Away, Off shift, Available), so Supply can tell a planned absence from a genuinely low-callout period before it schedules maintenance.
 
-**What changes for the handler.** S5: they see what their responder was offered, when, and what happened, and are told when a ping goes out or is missed. S6: they see the phone trail on each ping, a plain-language phone-health line, and can raise an incident with that evidence attached.
+**What changes for the responder.** S1: the quiet spell has an end, and the app says so. S2: a miss is not punished, the ping stays reachable for a moment, and an unseen ping is repeated. S3: undo exists. S4: ranking recovers by design. New: they can see exactly what their phone reports about itself (P5). S7: they can tell their handler they are away, with nothing counted against them. S8: they can put themselves back to available.
+
+**What changes for the handler.** S5: they see what their responder was offered, when, and what happened, and are told when a ping goes out or is missed. S6: they see the phone trail on each ping, a plain-language phone-health line, and can raise an incident with that evidence attached. S7/S8: they are told when a responder goes away or comes back, the card says "Away, not quiet", and the status history explains the gap.
 
 **What changes for Tech Ops.** For the first time they can answer "did the push arrive, and how late?" across all responders, by version, OS, device and network, and can receive and act on incidents with the evidence already attached.
 
@@ -167,6 +178,8 @@ Tickets are all topics since 12 Aug (107 in total, 83 open), not only ping probl
 - **No linking of device data to a legal identity,** and no device identifiers that could be matched to one. Data is keyed to the cover identity the app already holds.
 - RUM is not a performance score for responders. Handlers see the phone trail and phone health, not a ranking of responders by device quality.
 - No handler phone app (still Q4 Exploring); H3 alerts go to the console.
+- Away is not a leave-approval system: no handler approval, no reason, no calendar sync. The responder decides, the handler is informed. A handler cannot set a responder Away or Available on their behalf in this release.
+- Away does not arrange cover. Whether the handler or another responder covers the days is outside this release (mutual aid is still Q4 Exploring).
 - No mutual aid or cross-area cover, no Availability Confidence score, no per-responder ping wait.
 - Does not decide whether proximity should be 0.60.
 
@@ -178,6 +191,9 @@ Tickets are all topics since 12 Aug (107 in total, 83 open), not only ping probl
 - **Privacy and Security review before build,** because M1 is new collection from responders' phones and the cover-identity rule (Security Policy 4.1) is a contractual constraint. Needs Security sign-off on what M1 collects, how long it is kept, and who can see it.
 - **No history.** M1 starts collecting on release, so there is no "before" for 4.2 to compare against. The first two weeks after release are a baseline, not a verdict.
 - R2 and R3 need a simulation on the 10-week history so busy responders' load does not swing the other way.
+- **Supply and the availability record:** V1/V2 change what Dispatch writes to the Responder Availability Record. Supply reads it to put maintenance into low-callout periods, so an away period could look like a quiet one and get maintenance booked. The reason code is meant to prevent that, but the Supply owner must agree before build.
+- **Coverage:** Away shrinks the available pool. Coverage gaps are counted separately and should not be inflated or hidden by it; to be checked with Ravi.
+- **How availability is set today is unverified.** I have not confirmed with Wen Li or Sofia who can change it and from where. V1/V2 assume the responder cannot do it themselves; if they can, the scope shrinks.
 - Console changes need Sofia's design; H1 to H4 and M2 to M5 can be shown to Helen as a click-through.
 
 ---
@@ -217,6 +233,8 @@ Tickets are all topics since 12 Aug (107 in total, 83 open), not only ping probl
 | S4 stuck | no | recovery rule | separate signals |
 | S5 handler can't tell | support replies only | timeline, alert, indicator | plus reasons and fairness view |
 | S6 what responder was shown | no | per-ping phone trail, phone-health line, incident reporting (RUM) | same, plus the end-to-end acceptance flow |
+| S7 planned time away | no | responder sets Away; held rank; handler told | same, plus cover suggestions (future) |
+| S8 stuck unavailable | no | responder sets Available | same |
 | Tech Ops can see delivery and device problems | no | yes (M4 to M6) | yes, extended |
 | Size | days | one release plus app, console and monitoring work | 2-3 releases |
 | Reversible | yes | mostly | partly |
@@ -225,12 +243,29 @@ Tickets are all topics since 12 Aug (107 in total, 83 open), not only ping probl
 ## 5. Recommendation
 
 You asked for one fix that addresses the whole end-user experience, and you have chosen **Option B**, with RUM added. I agree with that choice.
-- It is the smallest option that covers S1 to S6 and gives handlers and Tech Ops a real answer to "what did the phone do with this ping".
+- It is the smallest option that covers S1 to S8 and gives handlers and Tech Ops a real answer to "what did the phone do with this ping".
 - It contains A as its first step, so if Wen Li or Marcus want the penalty change out early, nothing is wasted.
 - C depends on data we do not have and decisions Helen has not made.
 - A alone leaves the four already-quiet responders where they are and the handlers in the dark.
 
 The main risk of B is the RUM part: it is new data collection from responders' phones, so it needs Security review and an agreed tooling choice first. If that review runs long, A can ship first and the rest of B (with RUM) follow.
+
+### Does Option B fix every negative experience? No.
+
+Left unsolved or only partly solved, with where each is picked up:
+
+| Negative experience | Covered by B? | Where it goes |
+|---|---|---|
+| Quiet because of rank, late pings, accidental declines, handler in the dark, silent planned absence, stuck status | Yes (S1 to S8) | This brief |
+| The real cause is something other than rank (for example the new weights themselves, or a delivery problem we can't see yet) | Partly. B treats the symptoms and adds the data (M1) to find the cause | Review after the 2-week baseline; Wen Li's answer on weighting intent |
+| The 60s wait itself is too short for some responders | Only if Helen approves going back to 90s (Option A step); per-responder wait is Option C | Open question 6 |
+| Busy responders being worn out (Kip: "Gale's exhausted") | Only indirectly, as quiet responders return and share the load; there's no rest or load cap | New item for the roadmap |
+| Accessibility: text size (2 of 4 interviews), screen reader (ticket 3137), dark mode (Kip) | No | Separate Sofia Marino backlog; not in this brief |
+| Safety report: grapple line slow in cold (ticket 3092) | No | Needs triage now, outside this release |
+| Maintenance booked on marathon days (tickets 3054, 3109) | Partly: V1's reason code helps, but the cause is in Supply | Supply owner |
+| No one is available with the right capability (coverage gap) | No | Existing coverage-gap reporting; mutual aid is Q4 Exploring |
+| Handlers cannot be alerted away from the desk (Aunt Dot, Ambrose) | Only on the console | Handler phone app, Q4 Exploring |
+| We have not heard from responders or quartermasters directly | No | Research plan: same questions for all handlers plus a few responders |
 
 ## 6. Proposed success measures
 
@@ -248,6 +283,9 @@ Proposed, not agreed. "Now" figures are to 6 Sep and need refreshing with Ravi.
 | Pings with a recorded phone trail (reached, shown, opened) | none collected | none collected | 95% or more after release; set the rest after a 2-week baseline |
 | Push delivery rate and time-to-shown, by app version and network | unknown | unknown | measure for 2 weeks, then agree thresholds (M6) |
 | Incidents raised with the phone trail attached | 0 (tickets are free text) | 0 | all incidents raised from a ping carry it |
+| Pings sent to a responder who is Away or Off shift | not measured | not measured | 0 |
+| Away periods that cost the responder rank | unknown | unknown | 0 (rank on return equals rank on leaving) |
+| Tickets about "no pings" where the responder was Away or Off shift | unknown | unknown | trend down, since Support can see the state |
 
 ## 7. Open questions, in order
 
@@ -260,6 +298,8 @@ Proposed, not agreed. "Now" figures are to 6 Sep and need refreshing with Ravi.
 5. **Supply owner:** what the availability record and callout load change means for maintenance scheduling (tickets 3054, 3109).
 6. **Helen:** which Q3 commitments still stand (Availability Confidence, who-gets-pinged, ping wait tuning), and whether the wait goes back to 90s.
 7. **Nadia:** reply to the roughly 45 open tickets now, without waiting for a release.
+8. **Sofia Marino and Helen:** should return from Away be automatic on the end date, or only when the responder confirms? Automatic risks pinging someone who isn't ready; confirm-only risks someone staying silent after they're back (S8 again). What is the maximum length of an away period?
+9. **Wen Li and Sofia:** how is availability set today, by whom, and from where? Does the Responder Availability Record already have an away state? (Needed before V1/V2 are sized.)
 
 ## 8. Constraints that apply to every option
 

@@ -39,6 +39,11 @@
   .row1 { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
   .badge { font-size:15px; font-weight:700; padding:4px 12px; border-radius:6px; background:#e7f5ec; color:var(--green); }
   .badge.pinged { background:#e8f0ff; color:var(--blue); }
+  .badge.away { background:#fff4e0; color:var(--amber); }
+  .badge.off { background:#eef2f7; color:#44546a; }
+  .quiet.awaybox { background:#fff4e0; border-color:#f0cf93; }
+  .slog { font-size:12px; color:var(--mute); margin:0 0 10px; }
+  .slog div { padding:1px 0; }
 
   .quiet { border-radius:8px; padding:10px 12px; margin:10px 0; font-size:14px; border:1px solid; }
   .quiet.low { background:#fff4e0; border-color:#f0cf93; }
@@ -146,7 +151,7 @@
     <button id="simPing">▶ Send a ping to Meteor Mite</button>
     <button id="simMiss" disabled>Let it go unanswered (missed)</button>
     <label><input type="checkbox" id="sound" checked> Alert sounds on</label>
-    <span>· Click any ping row for detail. Use "Report a problem" to file a ticket with the ping attached.</span>
+    <span>· Click any ping row for detail. Use "Report an incident" to raise it with the ping and phone trail attached.</span>
   </div>
 
   <div class="grid" id="cards"></div>
@@ -157,6 +162,7 @@
     <b>H2</b> "quiet this week" indicator comparing a responder with their own last 8 weeks ·
     <b>H3</b> live alert when a ping goes out or is missed, with a distinct sound per responder ·
     <b>H4</b> one-tap "Report a problem with this ping" that creates a ticket with the ping data attached ·
+    <b>V1/V2</b> the responder tells you they are away (card shows "Away until…", quiet indicator off) or sets themselves available ·
     <b>M2</b> per-ping phone trail (reached the phone, shown, opened, tapped) ·
     <b>M3</b> plain-language phone-health line ·
     <b>M5</b> the report button now raises an incident with the trail and device facts attached.
@@ -194,7 +200,7 @@
         <li>Or do nothing until it reaches 0. The ping stays reachable for a moment (P2) if nobody else has taken it.</li>
         <li>Then switch to <b>Handler console</b> to see it in the timeline.</li>
       </ol>
-      <p class="sub">Also shows P5: the "What we measure" screen, listing exactly what the app reports.</p>
+      <p class="sub">Also shows P5 (the "What we measure" screen), V1 (<b>Plan time away</b>: pick 5 days) and V2 (<b>Set me available</b>). After you set status, switch to the Handler console to see the card change, then press "Send a ping" there to see that an away responder is skipped without a miss.</p>
       <button class="btn primary" id="phoneSend">▶ Send a ping to this phone</button>
       <p class="sub" style="margin-top:12px">Wait is 60s here because that's the shipped 4.2 value. Whether it goes back to 90s is a decision for Helen and Wen Li (see the brief).</p>
     </div>
@@ -218,27 +224,26 @@
             pings:[
               {t:at(2,14,12), outcome:'missed', secs:60},
               {t:at(5,9,40),  outcome:'taken',  secs:18},
-              {t:at(6,22,5),  outcome:'missed', secs:60},
+              {t:at(8,22,5),  outcome:'missed', secs:60},
               {t:at(12,17,30),outcome:'missed', secs:60},
               {t:at(19,11,2), outcome:'turned down', secs:9},
               {t:at(24,3,48), outcome:'missed', secs:60}
             ]},
     gale: { key:'gale', name:'The Gale', area:'Eastgate', freq:880, quiet:false,
             weekly:[13,13,12,14,13,17,19,20], avg:13, status:'Available',
-            pings:[
-              {t:at(0,20,15), outcome:'taken', secs:22},
-              {t:at(1,13,2),  outcome:'taken', secs:31},
-              {t:at(1,19,44), outcome:'missed',secs:60},
-              {t:at(2,8,21),  outcome:'taken', secs:14},
-              {t:at(3,16,9),  outcome:'taken', secs:41},
-              {t:at(4,22,30), outcome:'taken', secs:27},
-              {t:at(5,12,12), outcome:'turned down', secs:7},
-              {t:at(6,10,55), outcome:'taken', secs:19},
-              {t:at(9,15,40), outcome:'taken', secs:25},
-              {t:at(15,18,20),outcome:'missed',secs:60}
-            ]}
+            pings:[] }  /* filled below: 20 pings in the last 7 days, to match the chart */
   };
   R.mite.pings.forEach(function(p){p.id=nextId++;});
+  (function(){   /* The Gale: 20 pings in the last 7 days (about 10% missed, 15% declined), plus a few older ones */
+    for(var i=0;i<20;i++){
+      var d=1+Math.floor(i*0.33), hh=7+(i*5)%15, mm=(i*17)%60;
+      var o = (i%10===2) ? 'missed' : (i%7===5 ? 'turned down' : 'taken');
+      R.gale.pings.push({t:at(d,hh,mm), outcome:o, secs:o==='missed'?60:o==='turned down'?5+(i%6):12+(i*7)%30});
+    }
+    [[10,15,40,'taken',25],[13,9,5,'taken',18],[17,18,20,'missed',60],[21,12,12,'taken',33],[26,20,2,'taken',21]].forEach(function(a){
+      R.gale.pings.push({t:at(a[0],a[1],a[2]), outcome:a[3], secs:a[4]});
+    });
+  })();
   R.gale.pings.forEach(function(p){p.id=nextId++;});
 
   /* phone trail per ping (M2): seconds after "sent" at which each event happened; null = never */
@@ -256,11 +261,12 @@
   ];
   var segs=[
     {seg:'App 4.2.1 · Wi-Fi',   net:'wifi',   n:7, rc:99, sh:1.1, op:24, err:0},
-    {seg:'App 4.2.1 · Mobile',  net:'mobile', n:6, rc:96, sh:1.8, op:31, err:1},
+    {seg:'App 4.2.1 · Mobile',  net:'mobile', n:5, rc:96, sh:1.8, op:31, err:1},
     {seg:'App 4.2.0 · Mobile',  net:'mobile', n:2, rc:84, sh:9.4, op:58, err:3, flag:true},
     {seg:'App 4.1.9 · Mobile',  net:'mobile', n:1, rc:78, sh:14.2,op:61, err:2, flag:true},
-    {seg:'App 4.2.0 · Wi-Fi',   net:'wifi',   n:2, rc:97, sh:1.4, op:29, err:0}
+    {seg:'App 4.2.0 · Wi-Fi',   net:'wifi',   n:1, rc:97, sh:1.4, op:29, err:0}
   ];
+  var showAll = {};
   var range = { mite:7, gale:7 };   // days shown
   var open = {};                    // expanded ping ids
   var live = null;                  // {key, id, started}
@@ -293,9 +299,15 @@
     var latest = sortedPings(r)[0];
     var ago = latest ? Math.max(0, Math.floor((NOW-latest.t)/DAY)) : null;
     var agoTxt = ago===null ? 'no pings on record' : ago===0 ? 'last ping today' : 'last ping '+ago+' day'+(ago>1?'s':'')+' ago';
+    if(r.status==='Away'){
+      return '<div class="quiet awaybox"><b>Away, not quiet</b>'+r.name+' told you they are away until '+dateStr(r.awayUntil)+'. No pings are being sent, nothing is counted as missed, and their ranking is held until they are back. The quiet indicator is switched off while they are away.</div>';
+    }
+    if(r.status==='Off shift'){
+      return '<div class="quiet busy"><b>Off shift</b>'+r.name+' set themselves off shift. No pings are being sent.</div>';
+    }
     if(r.quiet){
       return '<div class="quiet low"><b>Quiet this week</b>'+
-        n+' pings in the last 7 days, against about '+r.avg+' a week over the previous 8 weeks. '+missed+' of the '+n+' were missed; '+agoTxt+'.'+
+        n+' pings in the last 7 days, against about '+r.avg+' a week over the previous 8 weeks. '+missed+' of the '+n+' missed; '+agoTxt+'.'+
         '<small>This tells you what happened, not why. We have not yet established the cause. Support is replying to your open tickets about this.</small></div>';
     }
     return '<div class="quiet busy"><b>Busier than usual</b>'+
@@ -339,11 +351,15 @@
     return tr;
   }
   function cardHtml(r){
-    var rows = sortedPings(r).filter(function(p){return inRange(r,p);}).map(function(p){return rowHtml(r,p);}).join('');
+    var list = sortedPings(r).filter(function(p){return inRange(r,p);});
+    var hidden = (!showAll[r.key] && list.length>8) ? list.length-8 : 0;
+    var rows = (hidden ? list.slice(0,8) : list).map(function(p){return rowHtml(r,p);}).join('');
+    if(hidden) rows += '<tr><td colspan="4"><a href="#" class="more" data-r="'+r.key+'">Show the other '+hidden+' pings</a></td></tr>';
     if(!rows) rows='<tr><td colspan="4" class="na">No pings in this period.</td></tr>';
-    var pinged = live && live.key===r.key;
+    var pinged = live && live.key===r.key && live.state==='offered';
     return '<div class="card">'+
-      '<div class="row1"><h2>'+r.name+'</h2><span class="badge'+(pinged?' pinged':'')+'">'+(pinged?'Pinged now':r.status)+'</span></div>'+
+      '<div class="row1"><h2>'+r.name+'</h2><span class="badge'+(pinged?' pinged':r.status==='Away'?' away':r.status==='Off shift'?' off':'')+'">'+(pinged?'Pinged now':r.status==='Away'?'Away until '+dateStr(r.awayUntil):r.status)+'</span></div>'+
+      (r.statusLog&&r.statusLog.length ? '<div class="slog"><b>Status changes (set by the responder)</b>'+r.statusLog.slice(-3).reverse().map(function(l){return '<div>'+l+'</div>';}).join('')+'</div>' : '')+
       '<div class="sub">Area: '+r.area+' · Handler: Kip</div>'+
       quietBox(r)+
       '<div class="health'+(r.device.warn?' warn':'')+'"><b>Phone health:</b> '+r.device.health+
@@ -366,8 +382,32 @@
 
   /* ---------- shared ping lifecycle ---------- */
   var timer=null, WAIT=60;
+  function dateStr(ms){ var d=new Date(ms), D=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return D[d.getDay()]+' '+d.getDate()+' '+M[d.getMonth()]; }
+  function hhmm(){ var d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+  function changeStatus(st, days){
+    var r=R.mite; r.statusLog=r.statusLog||[];
+    if(st==='Away'){
+      r.status='Away'; r.awayUntil=Date.now()+days*DAY;
+      r.statusLog.push(hhmm()+' · set Away for '+days+' day'+(days>1?'s':'')+', until '+dateStr(r.awayUntil));
+      setAlert('ok','Meteor Mite is away for '+days+' day'+(days>1?'s':''),'They told you themselves. Back on '+dateStr(r.awayUntil)+'. No pings until then, nothing counts against them, and their ranking is held.');
+      toast('Your handler has been told you are away until '+dateStr(r.awayUntil)+'.');
+    } else if(st==='Available'){
+      var was=r.status; r.status='Available'; r.awayUntil=null;
+      r.statusLog.push(hhmm()+' · set Available'+(was==='Away'?' (back from time away)':''));
+      setAlert('ok','Meteor Mite is available','They set it themselves'+(was==='Away'?' after time away. Ranking restored to where it was before they left.':'.')+' Pings can go out now.');
+      toast('You are available. Your handler can see it straight away.');
+    } else {
+      r.status='Off shift'; r.statusLog.push(hhmm()+' · set Off shift');
+      setAlert('ok','Meteor Mite is off shift','No pings until they set themselves available.');
+    }
+    beep(R.mite.freq); showAway=false; renderConsole(); renderPhone();
+  }
   function startPing(){
-    if(live) { toast('A ping is already live.'); return; }
+    if(live && live.state==='offered') { toast('A ping is already live.'); return; }
+    if(R.mite.status!=='Available'){
+      setAlert('ok','No ping sent to Meteor Mite','Status is '+(R.mite.status==='Away'?'Away until '+dateStr(R.mite.awayUntil):'Off shift')+'. The callout goes to the next responder. Nothing is recorded as missed or turned down, and the ranking is not touched.');
+      toast('Not pinged: Meteor Mite is '+R.mite.status.toLowerCase()+'.'); return;
+    }
     live={key:'mite', id:null, started:Date.now(), state:'offered'};
     setAlert('live','Ping sent to Meteor Mite','Waiting for an answer. 60 seconds, then it moves on to the next responder.');
     beep(R.mite.freq);
@@ -407,7 +447,19 @@
   }
 
   /* ---------- phone ---------- */
-  var undoTimer=null, undoLeft=0, claimOpen=true, showMeasure=false;
+  var undoTimer=null, undoLeft=0, claimOpen=true, showMeasure=false, showAway=false;
+  function statusBlock(){
+    var r=R.mite;
+    if(showAway){
+      var opts=''; for(var i=1;i<=14;i++) opts+='<option'+(i===5?' selected':'')+'>'+i+'</option>';
+      return '<div class="undo"><b>Plan time away</b><br>How many days? <select id="awayDays">'+opts+'</select><br>'+
+        '<span class="sub">Starts now. Your handler is told straight away. No pings while you are away, and nothing counts against you.</span><br>'+
+        '<button class="btn primary" id="sConfirmAway">Tell my handler</button> <button class="btn" id="sCancelAway">Cancel</button></div>';
+    }
+    if(r.status==='Away') return '<div class="status">Status: <b>Away until '+dateStr(r.awayUntil)+'</b>. No pings, and nothing counts against you.<br><button class="btn primary" id="sAvail" style="margin-top:6px">I'+"'"+'m back, set me available</button></div>';
+    if(r.status==='Off shift') return '<div class="status">Status: <b>Off shift</b>. No pings.<br><button class="btn primary" id="sAvail" style="margin-top:6px">Set me available</button></div>';
+    return '<div class="status">Status: <b>Available</b><br><button class="btn" id="sOff" style="margin-top:6px">Go off shift</button> <button class="btn" id="sAway" style="margin-top:6px">Plan time away</button></div>';
+  }
   function renderPhone(){
     var s=$('screen'), h='';
     if(showMeasure){
@@ -419,7 +471,9 @@
       return;
     }
     var quietMsg='<div class="status"><b>You haven'+"'"+'t been offered a callout for '+Math.max(0,Math.floor((NOW-sortedPings(R.mite)[0].t)/DAY))+' days.</b><br>Your handler can see this.</div>';
-    h+='<div class="top"><span>Rook Responder</span><span>Meteor Mite</span></div><h3>Available</h3>';
+    h+='<div class="top"><span>Rook Responder</span><span>Meteor Mite</span></div><h3>'+(R.mite.status==='Away'?'Away':R.mite.status)+'</h3>';
+    if(!(live && live.state==='offered')) h+=statusBlock();
+    if(R.mite.status!=='Available' && !live) quietMsg='';
     if(!live){
       h+=quietMsg+'<p class="sub">When a callout comes in, you'+"'"+'ll get a ping here. If you decline by mistake you can undo it for 10 seconds.</p>';
     } else if(live.state==='offered'){
@@ -518,6 +572,7 @@
   /* ---------- wiring ---------- */
   document.addEventListener('click',function(e){
     var t=e.target;
+    var mo=t.closest('.more'); if(mo){ e.preventDefault(); showAll[mo.getAttribute('data-r')]=true; renderConsole(); return; }
     var rb=t.closest('.report'); if(rb){ reportPing(rb.getAttribute('data-r'), +rb.getAttribute('data-id')); return; }
     var rs=t.closest('.raiseSeg'); if(rs){ var s=segs[+rs.getAttribute('data-i')];
       openIncident({title:'Raise an incident for '+s.seg, role:'Tech Ops', about:s.seg+', '+s.n+' responders', defaultCat:'Arrived late',
@@ -525,6 +580,11 @@
     var to=t.closest('.takeOver'); if(to){ incidents.forEach(function(c){ if(c.id===to.getAttribute('data-id')) c.owner='Tech Ops'; }); renderOps(); toast('Incident is now owned by Tech Ops.'); return; }
     var sg=t.closest('[data-range]'); if(sg){ range[sg.getAttribute('data-r')]=+sg.getAttribute('data-range'); renderConsole(); return; }
     var row=t.closest('tr.ping'); if(row){ var id=+row.getAttribute('data-id'); open[id]=!open[id]; renderConsole(); return; }
+    if(t.id==='sAway'){ showAway=true; renderPhone(); return; }
+    if(t.id==='sCancelAway'){ showAway=false; renderPhone(); return; }
+    if(t.id==='sConfirmAway'){ changeStatus('Away', +$('awayDays').value); return; }
+    if(t.id==='sAvail'){ changeStatus('Available'); return; }
+    if(t.id==='sOff'){ changeStatus('Off shift'); return; }
     if(t.id==='pMeasure'){ showMeasure=true; renderPhone(); return; }
     if(t.id==='pMeasureBack'){ showMeasure=false; renderPhone(); return; }
   });
