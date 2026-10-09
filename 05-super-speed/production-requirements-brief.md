@@ -3,6 +3,55 @@
 Rook Dispatch · Draft for Helen Achebe · 9 Oct 2026 · Owner: Dispatch PM
 Status: **Option B selected** (9 Oct), now including real user monitoring (RUM) of the responder phone app for handlers and Tech Ops. Options A and C are kept for comparison. Nothing here is committed or scheduled; Wen Li, Marcus, Security and Helen still need to agree.
 
+## Ownership and decisions
+
+Everything in the "Proposed owner" and "Needed by" columns is a proposal for Helen to confirm. Nothing here has been agreed, and I have not invented dates.
+
+**Accountable for this brief and for moving it forward:** the Dispatch PM (name to fill in), who started on 24 Aug 2026 and took over from Priya Raghunathan.
+**Decision on whether Option B proceeds:** Helen Achebe, Director of Product, who owns the roadmap and commitments (Team directory). Decision date: to be set by Helen.
+
+| What is needed | Proposed owner | Needed by | Why it blocks |
+|---|---|---|---|
+| Confirm whether the 4.2 weighting was meant to apply to responders who decline, how long "recent" lasts, and whether a miss should cost the same as a decline | Wen Li | Before R1 to R3 are built | Decides the ranking changes. Marcus asked on 14 Aug and there has been no answer. |
+| Approve Option B, and which Q3 commitments still stand | Helen Achebe | To be set | Changes to committed items go through her. |
+| Whether the ping wait goes back to 90s | Helen Achebe with Wen Li | Before release scope is fixed | It is in Option A's list and so arguably in B. See "Scope" below. |
+| Sign-off on what phone monitoring (M1) collects, retention, and who can see it | Security Policy 4.1 owner (not named in the Team directory) | Before M1 is built | New collection from responders' phones; cover-identity rule is contractual. |
+| Agree that away and available states can be written to the Responder Availability Record, with a reason code | Supply owner (not named in the Team directory) | Before V1 and V2 are built | Supply reads that record to schedule maintenance. |
+| Name the Tech Ops lead and say what they need from M4 to M6 | To be identified (not in the Team directory) | Before M4 to M6 are designed | There is no named user for the Tech Ops view yet. |
+| Effort and tooling for M1 (existing connector or in-house); what logs already exist | Marcus Oyelaran | Before release scope is fixed | Sizes the work and decides the build. |
+| Console and phone-app design, incl. a walkthrough of the accept flow | Sofia Marino | Before build | She owns the console and the phone app. |
+| Current weekly pings per responder (data stops 7 Sep) and agreement on the Section 6 targets | Ravi Menon | Before targets are agreed | The "Now" figures are a month old. |
+| Replies to the roughly 45 open "quiet" and "gone before" tickets | Nadia Hoffmann | Now, no release needed | Handlers are waiting. |
+
+## Scope: what the brief started as, and what it grew into
+
+**Original ask (what the brief was written to do).** Three options for the 4.2 problem (a quick fix that saves time, a targeted approach, and a long-term sustainable one). Each option states who it is for, what changes for them, and what it deliberately doesn't do. The ask was for one fix that addresses the whole end-user experience of the impacted responders.
+
+**Added after the first draft, all on Option B.** Each came from a request in conversation, not from new evidence.
+
+| Added | Where | Why it was added |
+|---|---|---|
+| Current and future state for all 16 responders and 15 handlers | Section 1 | To show the effect on everyone, not just the four quiet responders. |
+| Handler view of what the responder is seeing (H1 to H4) | Option B | Handlers said they could not tell what their responder was shown. |
+| Real user monitoring of phones, a Tech Ops view and incident reporting (M1 to M6) | Option B | To give handlers and Tech Ops evidence of what the phone did, since no phone-side data exists today. |
+| Responder-set Away and Available, with a status history (V1 to V3) and a "What we measure" screen (P5) | Option B | To cover planned time off and a stuck status, which the first draft did not address. |
+| New users: Tech Ops and Support | Option B | They are named in B but not yet in Section 2. |
+
+**Not in this brief.** A later prototype (`prototype-v2.html`) shows more than this brief specifies. None of the following is in scope until Helen decides.
+
+| Prototype-only feature | In scope? | Note |
+|---|---|---|
+| Handler "Reset responder" and "Update a missed ping" (reason required) | Not decided | Conflicts with "No handler control over routing" in Option B's "doesn't do" list. Needs Helen and Wen Li. |
+| Handler resend of a ping when the responder is close | Not decided | The 15-minute limit in the prototype is my assumption. |
+| Responder extends one ping by 30 seconds; 75-second wait | Not decided | Both are proposals. The brief currently has 60s as shipped and 90s as an option. |
+| Responder Break, Lunch, Emergency and Mark job complete | Not decided | A new status set that would also reach the Availability Record and Supply. |
+| App version 4.3 and an acknowledged update log on the responder's phone | Not decided | 4.3 is a proposed number. |
+
+**Open scope questions.**
+- **Wait:** is the 90s wait part of Option B? Option B includes "everything in A", and A includes it, but A calls it "Decision for Helen and Wen Li". Until Helen decides, treat it as out of B.
+- **Release size:** Section 4 says Option B is "one release". Section 5 says A could ship first and "the rest of B" follow if Security review runs long. Treat B as one release only if Security, tooling and Supply agree in time; otherwise A first.
+- **Wording:** Section 1 calls B "recommended" and the status line says "selected". B is selected pending the decisions above.
+
 ## 0. The problem in one paragraph
 
 Since 4.2 (12 Aug), four responders (Vesper, Farlight, The Undertow, Meteor Mite) receive about a fifth of the pings they used to, and they miss over half of the few they get. Ten others get more. Total ping volume is flat. Separately, every responder now has 60s, not 90s, to answer. Handlers see the result on a card but cannot tell what their responder was actually shown, or why.

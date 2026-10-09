@@ -15,6 +15,20 @@ prompt library built from your own questions.
 
 ### 1.
 
+yes please
+
 ### 2.
 
+give me the url for the brief
+
 ### 3.
+
+https://github.com/lrosesu44-sketch/claude-code-for-pms-final/blob/main/05-super-speed/brief.md rerun my skill on this briefing
+
+### 4.
+
+how is this different from my skill results
+
+### 5.
+
+run it against my entire project
